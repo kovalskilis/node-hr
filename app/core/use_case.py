@@ -22,7 +22,12 @@ class InterviewUseCase:
         self.storage.save(session_id, result)
         self.engine.logger._turn_counter = 1
         self.engine.logger.save_turn(result, turn_number=1)
-        return result
+        
+        result_copy = result.copy()
+        result["internal_thoughts"] = []
+        self.storage.save(session_id, result)
+        
+        return result_copy
 
     async def process_message(self, session_id: str, message: str) -> InterviewState:
         state = self.storage.get(session_id)
@@ -40,7 +45,6 @@ class InterviewUseCase:
             self.engine.logger._turn_counter = len(self.engine.logger.log_data.get("turns", []))
         self.engine.logger._turn_counter += 1
         
-        current_thoughts = result.get("internal_thoughts", []).copy()
         self.engine.logger.save_turn(result, turn_number=self.engine.logger._turn_counter)
         
         if result.get("is_complete") and result.get("final_report"):
@@ -51,7 +55,11 @@ class InterviewUseCase:
                 self.engine.logger.log_data["final_feedback"] = str(final_report)
             self.engine.logger._save_log()
 
-        return result
+        result_copy = result.copy()
+        result["internal_thoughts"] = []
+        self.storage.save(session_id, result)
+
+        return result_copy
 
     def get_session(self, session_id: str) -> InterviewState | None:
         return self.storage.get(session_id)

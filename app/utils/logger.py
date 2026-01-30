@@ -302,5 +302,3 @@ class NodeHRLogger:
                 self.log_data["final_feedback"] = str(final_report)
 
         self._save_log()
-        
-        state["internal_thoughts"] = []
