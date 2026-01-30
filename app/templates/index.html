@@ -1,0 +1,1779 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI-HR - Interview</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        :root {
+            --bg-primary: #f5f5f7;
+            --bg-secondary: rgba(255, 255, 255, 0.7);
+            --text-primary: #1d1d1f;
+            --text-secondary: #86868b;
+            --accent: #0071e3;
+            --accent-hover: #0077ed;
+            --border: rgba(0, 0, 0, 0.1);
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            --shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.12);
+        }
+
+        [data-theme="dark"] {
+            --bg-primary: #1d1d1f;
+            --bg-secondary: rgba(30, 30, 32, 0.8);
+            --text-primary: #f5f5f7;
+            --text-secondary: #a1a1a6;
+            --accent: #0a84ff;
+            --accent-hover: #409cff;
+            --border: rgba(255, 255, 255, 0.1);
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            --shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            letter-spacing: -0.01em;
+            overflow-x: hidden;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 24px;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 24px;
+            min-height: 100vh;
+        }
+
+        .glass {
+            background: var(--bg-secondary);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border-radius: 24px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .glass:hover {
+            box-shadow: var(--shadow-lg);
+        }
+
+        .chat-panel {
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 48px);
+            padding: 32px;
+        }
+
+        .header {
+            margin-bottom: 32px;
+            display: flex;
+            align-items: baseline;
+            gap: 16px;
+        }
+
+        .header-content {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin: 0 0 8px 0;
+            line-height: 1;
+            color: var(--text-primary);
+        }
+
+        .header p {
+            color: var(--text-secondary);
+            font-size: 15px;
+            font-weight: 400;
+        }
+
+        .connection-status {
+            position: relative;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+            margin-top: 0;
+            align-self: baseline;
+        }
+
+        .connection-status::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            left: 24px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #1d1d1f;
+            color: #f5f5f7;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+            z-index: 1000;
+            font-weight: 500;
+        }
+
+        [data-theme="dark"] .connection-status::after {
+            background: #f5f5f7;
+            color: #1d1d1f;
+        }
+
+        .connection-status:hover::after {
+            opacity: 1;
+        }
+
+        .connection-status.connected {
+            background: #34c759;
+            box-shadow: 0 0 0 4px rgba(52, 199, 89, 0.2);
+        }
+
+        .connection-status.disconnected {
+            background: #ff3b30;
+            box-shadow: 0 0 0 4px rgba(255, 59, 48, 0.2);
+        }
+
+        .connection-status.connecting {
+            background: #ff9500;
+            box-shadow: 0 0 0 4px rgba(255, 149, 0, 0.2);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.7;
+                transform: scale(1.1);
+            }
+        }
+
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px 0;
+            margin-bottom: 24px;
+        }
+
+        .messages {
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        .messages::-webkit-scrollbar {
+            display: none;
+        }
+
+        .message {
+            margin-bottom: 20px;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes messagePop {
+            0% {
+                opacity: 0;
+                transform: translateY(10px) scale(0.95);
+            }
+            50% {
+                transform: translateY(-2px) scale(1.02);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .message {
+            animation: messagePop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .message.user {
+            text-align: right;
+        }
+
+        .message-content {
+            display: inline-block;
+            padding: 16px 20px;
+            border-radius: 20px;
+            max-width: 70%;
+            font-size: 15px;
+            line-height: 1.5;
+        }
+
+        .message.user .message-content {
+            background: var(--accent);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.interviewer .message-content {
+            background: var(--accent);
+            color: white;
+            border-bottom-left-radius: 4px;
+        }
+
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            margin-bottom: 8px;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .typing-indicator.hidden {
+            display: none !important;
+        }
+
+        .typing-text {
+            color: var(--text-secondary);
+            font-size: 14px;
+            font-style: italic;
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--text-secondary);
+            animation: typingDot 1.4s infinite;
+        }
+
+        .typing-dot:nth-child(1) {
+            animation-delay: 0s;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typingDot {
+            0%, 60%, 100% {
+                transform: translateY(0);
+                opacity: 0.4;
+            }
+            30% {
+                transform: translateY(-8px);
+                opacity: 1;
+            }
+        }
+
+        .theme-toggle {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            transition: all 0.3s ease;
+            z-index: 1000;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow: var(--shadow);
+        }
+
+        .theme-toggle:hover {
+            transform: scale(1.1);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .input-area {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .input-area-row {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .input-wrapper {
+            flex: 1;
+            position: relative;
+        }
+
+        .input-wrapper textarea {
+            width: 100%;
+            padding: 16px 20px;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 15px;
+            resize: none;
+            outline: none;
+            transition: all 0.2s;
+            min-height: 52px;
+            max-height: 120px;
+            line-height: 1.5;
+            box-sizing: border-box;
+            overflow-y: auto;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        .input-wrapper textarea::-webkit-scrollbar {
+            display: none;
+        }
+
+        .input-wrapper textarea:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.1);
+        }
+
+        .send-button {
+            padding: 0 32px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 20px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+            height: 52px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+        }
+
+        .stop-button {
+            padding: 0;
+            width: 52px;
+            height: 52px;
+            background: #ff6b6b;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+            margin-left: 8px;
+            position: relative;
+        }
+
+        .stop-button:hover {
+            background: #ff5252;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+        }
+
+        .stop-icon {
+            display: block;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 2px;
+            transition: all 0.3s ease;
+        }
+
+        .stop-button.recording .stop-icon {
+            width: 0;
+            height: 0;
+            background: transparent;
+            border-left: 12px solid white;
+            border-top: 8px solid transparent;
+            border-bottom: 8px solid transparent;
+            border-radius: 0;
+            margin-left: 4px;
+        }
+
+        .stop-button.completed {
+            background: #4caf50;
+        }
+
+        .stop-button.completed:hover {
+            background: #45a049;
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+        }
+
+        .stop-button.completed .stop-icon {
+            width: 0;
+            height: 0;
+            background: transparent;
+            border-left: 14px solid white;
+            border-top: 10px solid transparent;
+            border-bottom: 10px solid transparent;
+            border-radius: 0;
+            margin-left: 4px;
+        }
+
+        .download-button {
+            padding: 0;
+            width: 52px;
+            height: 52px;
+            background: transparent;
+            border: 1.5px solid var(--border);
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+            margin-left: 8px;
+            color: var(--text-primary);
+        }
+
+        .download-button:hover {
+            background: var(--bg-secondary);
+            border-color: var(--accent);
+            color: var(--accent);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 113, 227, 0.15);
+        }
+
+        .download-button:active {
+            transform: translateY(0);
+        }
+
+        .send-button:hover:not(:disabled) {
+            background: var(--accent-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 113, 227, 0.3);
+        }
+
+        .send-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .neural-panel {
+            padding: 32px;
+            height: calc(100vh - 48px);
+            display: flex;
+            flex-direction: column;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            background: rgba(255, 255, 255, 0.7);
+        }
+
+        [data-theme="dark"] .neural-panel {
+            background: rgba(30, 30, 32, 0.8);
+        }
+
+        .neural-header {
+            margin-bottom: 24px;
+        }
+
+        .neural-header h2 {
+            font-size: 24px;
+            font-weight: 600;
+            letter-spacing: -0.01em;
+            margin-bottom: 8px;
+        }
+
+        .neural-header p {
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+
+        .thoughts-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px 0;
+        }
+
+        .thoughts-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .thoughts-container::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+
+        .theme-toggle {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            transition: all 0.3s ease;
+            z-index: 1000;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+
+        .theme-toggle:hover {
+            transform: scale(1.1);
+            box-shadow: var(--shadow);
+        }
+
+        .thought-item {
+            padding: 16px;
+            margin-bottom: 12px;
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            animation: slideIn 0.3s ease-out;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+
+        .thought-item.warning {
+            border-left: 4px solid #ff6b6b;
+        }
+
+        .thought-item.sentiment-confident {
+            border-left: 4px solid #51cf66;
+        }
+
+        .thought-item.sentiment-uncertain {
+            border-left: 4px solid #ffd43b;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .thought-agent {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 8px;
+            font-family: 'SF Mono', 'Monaco', 'Menlo', 'Courier New', monospace;
+        }
+
+        .thought-content {
+            font-size: 13px;
+            color: var(--text-primary);
+            line-height: 1.6;
+            font-family: 'SF Mono', 'Monaco', 'Menlo', 'Courier New', monospace;
+            white-space: pre-wrap;
+        }
+
+        .metrics {
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border);
+        }
+
+        .metric-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            font-size: 13px;
+        }
+
+        .metric-label {
+            color: var(--text-secondary);
+        }
+
+        .metric-value {
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .final-report {
+            padding: 32px;
+            background: #4caf50;
+            color: white;
+            border-radius: 24px;
+            margin: 24px;
+            box-shadow: var(--shadow-lg);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .final-report:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(76, 175, 80, 0.4);
+        }
+
+        .final-report h2 {
+            margin: 0 0 12px 0;
+            color: white;
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .final-report p {
+            margin: 0;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 16px;
+        }
+
+        .report-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .report-modal-content {
+            background: var(--bg-secondary);
+            border-radius: 24px;
+            max-width: 800px;
+            max-height: 90vh;
+            width: 90%;
+            overflow-y: auto;
+            box-shadow: var(--shadow-lg);
+            animation: slideUp 0.3s ease-out;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            cursor: default;
+        }
+
+        .report-modal-content::-webkit-scrollbar {
+            display: none;
+        }
+
+        .report-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 24px 32px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .report-modal-header h2 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 32px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.2s;
+        }
+
+        .modal-close:hover {
+            background: var(--border);
+            color: var(--text-primary);
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 20000;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .loading-overlay.active {
+            display: flex;
+        }
+
+        .loading-content {
+            background: var(--bg-secondary);
+            border-radius: 24px;
+            padding: 48px 64px;
+            text-align: center;
+            box-shadow: var(--shadow-lg);
+            animation: slideUp 0.3s ease-out;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .loading-spinner {
+            width: 64px;
+            height: 64px;
+            border: 4px solid var(--bg-tertiary);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 24px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-message {
+            font-size: 20px;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin: 0;
+        }
+
+        .loading-subtitle {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-top: 12px;
+        }
+
+        .report-modal-body {
+            padding: 32px;
+        }
+
+        .decision-card {
+            padding: 24px;
+            background: var(--bg-primary);
+            border-radius: 16px;
+            border: 2px solid var(--accent);
+            margin-top: 16px;
+        }
+
+        .decision-grade {
+            font-size: 48px;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 16px;
+        }
+
+        .decision-recommendation {
+            font-size: 18px;
+            margin-bottom: 12px;
+        }
+
+        .decision-reason {
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .decision-confidence {
+            margin-top: 12px;
+            padding: 8px 16px;
+            background: rgba(76, 175, 80, 0.1);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+
+        .confirmed-skills {
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border);
+        }
+
+        .confirmed-skills h4 {
+            margin: 0 0 12px 0;
+            color: var(--text-primary);
+            font-size: 16px;
+        }
+
+        .skills-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .skill-tag {
+            padding: 6px 12px;
+            background: var(--accent);
+            color: white;
+            border-radius: 16px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .knowledge-gaps-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .knowledge-gap-item {
+            padding: 16px;
+            background: var(--bg-primary);
+            border-radius: 12px;
+            border-left: 4px solid #ff9800;
+        }
+
+        .gap-title {
+            color: var(--text-primary);
+            margin-bottom: 12px;
+            font-size: 15px;
+        }
+
+        .gap-explanation {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+        }
+
+        .gap-explanation strong {
+            color: var(--accent);
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .educational-content {
+            padding: 12px;
+            background: rgba(76, 175, 80, 0.05);
+            border-radius: 8px;
+            color: var(--text-primary);
+            line-height: 1.6;
+            font-size: 14px;
+            white-space: pre-wrap;
+        }
+
+        .knowledge-gaps {
+            list-style: none;
+            padding: 0;
+        }
+
+        .knowledge-gaps li {
+            padding: 12px;
+            margin-bottom: 8px;
+            background: var(--bg-primary);
+            border-radius: 12px;
+            border-left: 4px solid #ff6b6b;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .final-report h2 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 24px;
+        }
+
+        .report-section {
+            margin-bottom: 32px;
+        }
+
+        .report-section h3 {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--text-primary);
+        }
+
+        .skills-matrix {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+
+        .skill-item {
+            padding: 16px;
+            background: var(--bg-primary);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .skill-label {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .skill-value {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--accent);
+        }
+
+        .loading {
+            display: inline-flex;
+            gap: 4px;
+            align-items: center;
+        }
+
+        .loading-dot {
+            width: 6px;
+            height: 6px;
+            background: var(--text-secondary);
+            border-radius: 50%;
+            animation: bounce 1.4s infinite ease-in-out;
+        }
+
+        .loading-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .loading-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes bounce {
+            0%, 80%, 100% {
+                transform: scale(0);
+            }
+            40% {
+                transform: scale(1);
+            }
+        }
+
+        @media (max-width: 1024px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+
+            .neural-panel {
+                height: auto;
+                max-height: 400px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Переключить тему">
+        <span id="themeIcon">🌙</span>
+    </button>
+    <div class="container">
+        <div class="chat-panel glass">
+            <div class="header">
+                <div class="connection-status" id="connectionStatus" data-tooltip="Подключение..." data-state="connecting"></div>
+                <div class="header-content">
+                    <h1>AI-HR</h1>
+                    <p>Interview</p>
+                </div>
+            </div>
+            <div class="messages" id="messages"></div>
+            <div class="input-area">
+                <div id="typingIndicator" class="typing-indicator hidden"></div>
+                <div class="input-area-row">
+                    <div class="input-wrapper">
+                        <textarea id="messageInput" placeholder="Введите ваше сообщение..." rows="1"></textarea>
+                    </div>
+                    <button class="send-button" id="sendButton" onclick="sendMessage()">Отправить</button>
+                <button class="stop-button" id="stopButton" onclick="stopAndGenerateReport()" title="Остановить и сгенерировать отчет">
+                    <span class="stop-icon" id="stopIcon"></span>
+                </button>
+                <button class="download-button" id="downloadButton" onclick="downloadInterviewLog()" title="Скачать логи интервью">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                </button>
+                </div>
+            </div>
+        </div>
+        <div class="neural-panel glass">
+            <div class="neural-header">
+                <h2>Neural Engine</h2>
+                <p>Внутренние мысли системы</p>
+            </div>
+            <div class="thoughts-container" id="thoughtsContainer"></div>
+            <div class="metrics" id="metrics">
+                <div class="metric-item">
+                    <span class="metric-label">Токены</span>
+                    <span class="metric-value" id="tokenCount">0</span>
+                </div>
+                <div class="metric-item">
+                    <span class="metric-label">Задержка</span>
+                    <span class="metric-value" id="latency">0ms</span>
+                </div>
+                <div class="metric-item">
+                    <span class="metric-label">Валидации</span>
+                    <span class="metric-value" id="validations">0</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let ws = null;
+        let sessionId = localStorage.getItem('interview_session_id') || 'session_' + Date.now();
+        let isConnected = false;
+        
+        if (!localStorage.getItem('interview_session_id')) {
+            localStorage.setItem('interview_session_id', sessionId);
+        }
+
+        function updateConnectionStatus(state, tooltip) {
+            const statusEl = document.getElementById('connectionStatus');
+            if (statusEl) {
+                statusEl.className = `connection-status ${state}`;
+                statusEl.setAttribute('data-tooltip', tooltip);
+                statusEl.setAttribute('data-state', state);
+            }
+        }
+
+        function toggleTheme() {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateThemeIcon(newTheme);
+        }
+
+        function updateThemeIcon(theme) {
+            const icon = document.getElementById('themeIcon');
+            if (icon) {
+                icon.textContent = theme === 'dark' ? '☀️' : '🌙';
+            }
+        }
+
+        function initTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            updateThemeIcon(savedTheme);
+        }
+
+        function connect() {
+            updateConnectionStatus('connecting', 'Подключение...');
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/api/v1/interview/ws`;
+            ws = new WebSocket(wsUrl);
+
+            ws.onopen = () => {
+                isConnected = true;
+                updateConnectionStatus('connected', 'Соединение установлено');
+                ws.send(JSON.stringify({
+                    action: 'start',
+                    session_id: sessionId
+                }));
+            };
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                if (data.type === 'session_id' && data.session_id) {
+                    sessionId = data.session_id;
+                    localStorage.setItem('interview_session_id', sessionId);
+                } else if (data.type === 'session_resumed') {
+                    // Сессия восстановлена, продолжаем работу
+                    sessionId = data.session_id;
+                    localStorage.setItem('interview_session_id', sessionId);
+                    console.log('Session resumed:', sessionId);
+                    // Восстанавливаем состояние интерфейса
+                    if (data.state) {
+                        if (data.state.conversation_history && data.state.conversation_history.length > 0) {
+                            // Восстанавливаем историю сообщений
+                            const messagesDiv = document.getElementById('messages');
+                            messagesDiv.innerHTML = '';
+                            data.state.conversation_history.forEach(msg => {
+                                if (msg.role === 'user') {
+                                    addMessage('user', msg.content);
+                                } else if (msg.role === 'assistant') {
+                                    addMessage('interviewer', msg.content);
+                                }
+                            });
+                        }
+                        if (data.state.internal_thoughts && data.state.internal_thoughts.length > 0) {
+                            updateThoughts(data.state.internal_thoughts);
+                        }
+                        if (data.state.metrics) {
+                            updateMetrics(data.state.metrics);
+                        }
+                    }
+                }
+                handleMessage(data);
+            };
+
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+                updateConnectionStatus('disconnected', 'Нет соединения');
+            };
+
+            ws.onclose = () => {
+                isConnected = false;
+                updateConnectionStatus('disconnected', 'Соединение закрыто');
+            };
+        }
+
+        function handleMessage(data) {
+            if (data.type === 'status') {
+                showTypingIndicator(data.message || 'Собеседник печатает...');
+                setStopButtonRecording(true);
+            } else if (data.type === 'interviewer') {
+                hideTypingIndicator();
+                setStopButtonRecording(false);
+                addMessage('interviewer', data.message);
+                if (data.internal_thoughts) {
+                    updateThoughts(data.internal_thoughts);
+                }
+                if (data.expert_analysis) {
+                    updateThoughtsFromAnalysis(data.expert_analysis);
+                }
+                if (data.metrics) {
+                    console.log('Received metrics:', data.metrics);
+                    updateMetrics(data.metrics);
+                } else if (data.state && data.state.metrics) {
+                    console.log('Received metrics from state:', data.state.metrics);
+                    updateMetrics(data.state.metrics);
+                }
+            } else if (data.type === 'final_report') {
+                hideTypingIndicator();
+                setStopButtonRecording(false);
+                hideLoadingOverlay();
+                setStopButtonCompleted();
+                // Сохраняем sessionId после завершения интервью
+                if (sessionId) {
+                    localStorage.setItem('interview_session_id', sessionId);
+                }
+                if (data.metrics) {
+                    updateMetrics(data.metrics);
+                }
+                console.log('Final report received:', data.report);
+                if (!data.report) {
+                    console.error('Report is missing or null');
+                    alert('Ошибка: отчет не был сгенерирован');
+                    return;
+                }
+                showFinalReport(data.report);
+            } else if (data.type === 'system') {
+                hideTypingIndicator();
+                setStopButtonRecording(false);
+                if (data.message && !data.message.includes('Подключено') && !data.message.includes('Интервью начато')) {
+                    addMessage('system', data.message);
+                }
+            } else if (data.type === 'error') {
+                hideTypingIndicator();
+                setStopButtonRecording(false);
+                hideLoadingOverlay();
+                updateConnectionStatus('disconnected', 'Ошибка соединения');
+                addMessage('system', data.message);
+            }
+        }
+
+        function setStopButtonRecording(isRecording) {
+            const stopButton = document.getElementById('stopButton');
+            if (stopButton) {
+                if (isRecording) {
+                    stopButton.classList.add('recording');
+                    stopButton.classList.remove('completed');
+                    stopButton.title = 'Система обрабатывает ответ...';
+                    stopButton.onclick = stopAndGenerateReport;
+                } else {
+                    stopButton.classList.remove('recording');
+                    stopButton.title = 'Остановить и сгенерировать отчет';
+                    stopButton.onclick = stopAndGenerateReport;
+                }
+            }
+        }
+
+        function setStopButtonCompleted() {
+            const stopButton = document.getElementById('stopButton');
+            if (stopButton) {
+                stopButton.classList.remove('recording');
+                stopButton.classList.add('completed');
+                stopButton.title = 'Начать новое интервью';
+                stopButton.onclick = startNewInterview;
+            }
+        }
+
+        let previousSessionId = null;
+
+        function startNewInterview() {
+            if (confirm('Начать новое интервью? Текущая сессия будет сброшена.')) {
+                // Сохраняем старый sessionId для скачивания логов
+                previousSessionId = sessionId;
+                
+                // Сбрасываем сессию
+                sessionId = 'session_' + Date.now();
+                localStorage.setItem('interview_session_id', sessionId);
+                
+                // Очищаем интерфейс
+                document.getElementById('messages').innerHTML = '';
+                document.getElementById('thoughtsContainer').innerHTML = '';
+                updateMetrics({ total_tokens: 0, avg_latency: 0, validations: 0 });
+                
+                // Сбрасываем кнопку
+                const stopButton = document.getElementById('stopButton');
+                if (stopButton) {
+                    stopButton.classList.remove('completed');
+                    stopButton.title = 'Остановить и сгенерировать отчет';
+                    stopButton.onclick = stopAndGenerateReport;
+                }
+                
+                // Закрываем модальное окно отчета, если открыто
+                const reportModal = document.querySelector('.report-modal');
+                if (reportModal) {
+                    reportModal.remove();
+                }
+                
+                // Начинаем новое интервью
+                if (ws && isConnected) {
+                    ws.send(JSON.stringify({
+                        action: 'start',
+                        session_id: sessionId
+                    }));
+                } else {
+                    connect();
+                }
+            }
+        }
+
+        function addMessage(role, text) {
+            const messagesDiv = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${role}`;
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            contentDiv.textContent = text;
+            
+            messageDiv.appendChild(contentDiv);
+            messagesDiv.appendChild(messageDiv);
+            smoothScrollToBottom(messagesDiv);
+            return messageDiv;
+        }
+
+        function smoothScrollToBottom(element) {
+            const targetScroll = element.scrollHeight;
+            const currentScroll = element.scrollTop;
+            const distance = targetScroll - currentScroll;
+            const duration = 300;
+            const startTime = performance.now();
+
+            function animateScroll(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const ease = 1 - Math.pow(1 - progress, 3);
+                element.scrollTop = currentScroll + distance * ease;
+
+                if (progress < 1) {
+                    requestAnimationFrame(animateScroll);
+                }
+            }
+
+            requestAnimationFrame(animateScroll);
+        }
+
+        function showTypingIndicator(text = 'Собеседник печатает...') {
+            let indicator = document.getElementById('typingIndicator');
+            
+            if (!indicator) {
+                const inputArea = document.querySelector('.input-area');
+                indicator = document.createElement('div');
+                indicator.id = 'typingIndicator';
+                indicator.className = 'typing-indicator';
+                
+                const textSpan = document.createElement('span');
+                textSpan.className = 'typing-text';
+                textSpan.textContent = text;
+                
+                const dotsDiv = document.createElement('div');
+                dotsDiv.className = 'typing-dots';
+                for (let i = 0; i < 3; i++) {
+                    const dot = document.createElement('div');
+                    dot.className = 'typing-dot';
+                    dotsDiv.appendChild(dot);
+                }
+                
+                indicator.appendChild(textSpan);
+                indicator.appendChild(dotsDiv);
+                inputArea.insertBefore(indicator, inputArea.firstChild);
+            } else {
+                let textSpan = indicator.querySelector('.typing-text');
+                if (!textSpan) {
+                    textSpan = document.createElement('span');
+                    textSpan.className = 'typing-text';
+                    indicator.appendChild(textSpan);
+                }
+                textSpan.textContent = text;
+                
+                let dotsDiv = indicator.querySelector('.typing-dots');
+                if (!dotsDiv) {
+                    dotsDiv = document.createElement('div');
+                    dotsDiv.className = 'typing-dots';
+                    for (let i = 0; i < 3; i++) {
+                        const dot = document.createElement('div');
+                        dot.className = 'typing-dot';
+                        dotsDiv.appendChild(dot);
+                    }
+                    indicator.appendChild(dotsDiv);
+                }
+                
+                indicator.classList.remove('hidden');
+            }
+        }
+
+        function hideTypingIndicator() {
+            const indicator = document.getElementById('typingIndicator');
+            if (indicator) {
+                indicator.classList.add('hidden');
+            }
+        }
+
+        function updateThoughts(thoughts) {
+            const container = document.getElementById('thoughtsContainer');
+            container.innerHTML = '';
+            
+            thoughts.forEach(thought => {
+                const item = document.createElement('div');
+                item.className = 'thought-item';
+                
+                if (thought.warning) {
+                    item.classList.add('warning');
+                }
+                if (thought.sentiment) {
+                    item.classList.add(`sentiment-${thought.sentiment}`);
+                }
+                
+                item.innerHTML = `
+                    <div class="thought-agent">${thought.agent || 'System'}</div>
+                    <div class="thought-content">${thought.thought || JSON.stringify(thought)}</div>
+                `;
+                container.appendChild(item);
+            });
+            
+            smoothScrollToBottom(container);
+        }
+
+        function updateThoughtsFromAnalysis(analysis) {
+            const thoughts = [];
+            if (analysis.python_specialist) {
+                thoughts.push({
+                    agent: 'Python Specialist',
+                    thought: JSON.parse(analysis.python_specialist).notes || analysis.python_specialist
+                });
+            }
+            if (analysis.fact_checker) {
+                thoughts.push({
+                    agent: 'Fact Checker',
+                    thought: JSON.parse(analysis.fact_checker).detected_issues?.join(', ') || analysis.fact_checker
+                });
+            }
+            if (analysis.hr_agent) {
+                thoughts.push({
+                    agent: 'HR Agent',
+                    thought: JSON.parse(analysis.hr_agent).observations || analysis.hr_agent
+                });
+            }
+            updateThoughts(thoughts);
+        }
+
+        function updateMetrics(metrics) {
+            console.log('Updating metrics:', metrics);
+            if (!metrics) return;
+            
+            const tokenCountEl = document.getElementById('tokenCount');
+            const latencyEl = document.getElementById('latency');
+            const validationsEl = document.getElementById('validations');
+            
+            if (tokenCountEl && metrics.total_tokens !== undefined && metrics.total_tokens !== null) {
+                tokenCountEl.textContent = metrics.total_tokens;
+            }
+            if (latencyEl && metrics.avg_latency !== undefined && metrics.avg_latency !== null) {
+                latencyEl.textContent = Math.round(metrics.avg_latency) + 'ms';
+            }
+            if (validationsEl && metrics.validations !== undefined && metrics.validations !== null) {
+                validationsEl.textContent = metrics.validations;
+            }
+        }
+
+        function stopAndGenerateReport() {
+            if (!isConnected || !ws) {
+                alert('Нет соединения с сервером');
+                return;
+            }
+            
+            if (confirm('Остановить интервью и сгенерировать финальный отчет?')) {
+                showLoadingOverlay(
+                    'Генерируется финальный отчет',
+                    'Это может занять пару минут. Пожалуйста, подождите...'
+                );
+                ws.send(JSON.stringify({
+                    action: 'message',
+                    session_id: sessionId,
+                    message: 'стоп игра'
+                }));
+                showTypingIndicator('Генерирую финальный отчет...');
+            }
+        }
+
+        function showLoadingOverlay(message = 'Генерируется финальный отчет', subtitle = 'Это может занять пару минут. Пожалуйста, подождите...') {
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) {
+                const messageEl = overlay.querySelector('.loading-message');
+                const subtitleEl = overlay.querySelector('.loading-subtitle');
+                if (messageEl) messageEl.textContent = message;
+                if (subtitleEl) subtitleEl.textContent = subtitle;
+                overlay.classList.add('active');
+            }
+        }
+
+        function hideLoadingOverlay() {
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) {
+                overlay.classList.remove('active');
+            }
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const text = input.value.trim();
+            
+            if (!text || !isConnected) return;
+            
+            addMessage('user', text);
+            input.value = '';
+            
+            showTypingIndicator('Собеседник печатает...');
+            setStopButtonRecording(true);
+            
+            ws.send(JSON.stringify({
+                action: 'message',
+                session_id: sessionId,
+                message: text
+            }));
+        }
+
+        async function downloadInterviewLog() {
+            // Определяем, какую сессию использовать для скачивания
+            let currentSessionId = sessionId || localStorage.getItem('interview_session_id');
+            
+            // Если есть предыдущая сессия и текущая сессия только что началась (нет данных),
+            // используем предыдущую для скачивания логов
+            if (previousSessionId && currentSessionId) {
+                // Проверяем, есть ли данные для текущей сессии
+                try {
+                    const testUrl = `/api/v1/interview/download-log?session_id=${encodeURIComponent(currentSessionId)}`;
+                    const testResponse = await fetch(testUrl);
+                    if (testResponse.status === 404) {
+                        // Текущая сессия пуста, используем предыдущую
+                        currentSessionId = previousSessionId;
+                        console.log('Current session has no data, using previous session:', previousSessionId);
+                    }
+                } catch (e) {
+                    // Если ошибка при проверке, используем предыдущую сессию
+                    currentSessionId = previousSessionId;
+                    console.log('Error checking session, using previous:', previousSessionId);
+                }
+            } else if (previousSessionId && !currentSessionId) {
+                // Если текущей сессии нет, но есть предыдущая - используем её
+                currentSessionId = previousSessionId;
+            }
+            
+            if (!currentSessionId) {
+                alert('Сессия не найдена. Начните интервью.');
+                return;
+            }
+
+            console.log('Downloading log for session:', currentSessionId);
+            console.log('Current sessionId variable:', sessionId);
+            console.log('Previous sessionId:', previousSessionId);
+
+            try {
+                const url = `/api/v1/interview/download-log?session_id=${encodeURIComponent(currentSessionId)}`;
+                console.log('Request URL:', url);
+                const response = await fetch(url);
+                
+                console.log('Response status:', response.status);
+                
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        const errorText = await response.text();
+                        console.error('404 Error response:', errorText);
+                        alert('Сессия не найдена на сервере. Возможно, сервер был перезапущен. Начните новое интервью.\n\nSession ID: ' + currentSessionId);
+                    } else {
+                        const errorText = await response.text();
+                        console.error('Error response:', errorText);
+                        alert('Ошибка при скачивании логов: ' + response.statusText);
+                    }
+                    return;
+                }
+
+                const blob = await response.blob();
+                const downloadUrl = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = downloadUrl;
+                link.download = `interview_log_${currentSessionId}.json`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(downloadUrl);
+                console.log('File downloaded successfully');
+            } catch (error) {
+                console.error('Error downloading log:', error);
+                alert('Ошибка при скачивании логов: ' + error.message);
+            }
+        }
+
+        let savedReport = null;
+
+        function createReportModal(report) {
+            if (!report || typeof report !== 'object') {
+                console.error('Invalid report data:', report);
+                report = {
+                    decision: { grade: 'N/A', hiring_recommendation: 'error' },
+                    skills_matrix: {},
+                    knowledge_gaps: [],
+                    roadmap: {},
+                    summary: 'Ошибка загрузки отчета'
+                };
+            }
+            
+            const decision = report.decision || {};
+            const skillsMatrix = report.skills_matrix || {};
+            const knowledgeGaps = Array.isArray(report.knowledge_gaps) ? report.knowledge_gaps : [];
+            const roadmap = report.roadmap || {};
+            
+            const modal = document.createElement('div');
+            modal.className = 'report-modal';
+            modal.innerHTML = `
+                <div class="report-modal-content">
+                    <div class="report-modal-header">
+                        <h2>Финальный отчет</h2>
+                        <button class="modal-close" onclick="this.closest('.report-modal').remove()">×</button>
+                    </div>
+                    <div class="report-modal-body">
+                        <div class="report-section">
+                            <h3>Decision</h3>
+                            <div class="decision-card">
+                                <div class="decision-grade">${decision.grade || report.grade || 'N/A'}</div>
+                                <div class="decision-recommendation">
+                                    <strong>Рекомендация:</strong> ${decision.hiring_recommendation || report.hiring_recommendation || 'N/A'}
+                                </div>
+                                ${decision.confidence_score !== undefined ? `
+                                <div class="decision-confidence">
+                                    <strong>Уверенность в решении:</strong> ${decision.confidence_score}/100
+                                </div>
+                                ` : ''}
+                                <p class="decision-reason">${decision.recommendation_reason || report.recommendation_message || ''}</p>
+                            </div>
+                        </div>
+                        <div class="report-section">
+                            <h3>Матрица навыков</h3>
+                            <div class="skills-matrix">
+                                ${Object.entries(skillsMatrix).filter(([key]) => key !== 'confirmed_skills').map(([key, value]) => `
+                                    <div class="skill-item">
+                                        <span class="skill-label">${key}</span>
+                                        <span class="skill-value">${value}/10</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            ${skillsMatrix.confirmed_skills && skillsMatrix.confirmed_skills.length > 0 ? `
+                            <div class="confirmed-skills">
+                                <h4>Подтвержденные навыки</h4>
+                                <div class="skills-tags">
+                                    ${skillsMatrix.confirmed_skills.map(skill => `<span class="skill-tag">${skill}</span>`).join('')}
+                                </div>
+                            </div>
+                            ` : ''}
+                        </div>
+                        ${knowledgeGaps.length > 0 ? `
+                        <div class="report-section">
+                            <h3>Пробелы в знаниях (Knowledge Gaps)</h3>
+                            <div class="knowledge-gaps-list">
+                                ${knowledgeGaps.map((gap, index) => {
+                                    const gapText = typeof gap === 'string' ? gap : gap.gap || gap;
+                                    const educationalContent = typeof gap === 'object' && gap.educational_content ? gap.educational_content : '';
+                                    return `
+                                    <div class="knowledge-gap-item">
+                                        <div class="gap-title">
+                                            <strong>Пробел ${index + 1}:</strong> ${gapText}
+                                        </div>
+                                        ${educationalContent ? `
+                                        <div class="gap-explanation">
+                                            <strong>Объяснение (как ментор):</strong>
+                                            <div class="educational-content">${educationalContent}</div>
+                                        </div>
+                                        ` : ''}
+                                    </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+                        ` : ''}
+                        <div class="report-section">
+                            <h3>Дорожная карта развития</h3>
+                            <div class="roadmap">
+                                ${roadmap.immediate ? `
+                                <div class="roadmap-item">
+                                    <h4>Немедленно</h4>
+                                    <ul>${roadmap.immediate.map(item => `<li>${item}</li>`).join('')}</ul>
+                                </div>
+                                ` : ''}
+                                ${roadmap.short_term ? `
+                                <div class="roadmap-item">
+                                    <h4>Краткосрочно</h4>
+                                    <ul>${roadmap.short_term.map(item => `<li>${item}</li>`).join('')}</ul>
+                                </div>
+                                ` : ''}
+                                ${roadmap.long_term ? `
+                                <div class="roadmap-item">
+                                    <h4>Долгосрочно</h4>
+                                    <ul>${roadmap.long_term.map(item => `<li>${item}</li>`).join('')}</ul>
+                                </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                        ${report.summary ? `
+                        <div class="report-section">
+                            <h3>Резюме</h3>
+                            <p>${report.summary}</p>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+            
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.remove();
+                }
+            });
+            
+            return modal;
+        }
+
+        function openReportModal() {
+            if (!savedReport) return;
+            
+            const existingModal = document.querySelector('.report-modal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+            
+            const modal = createReportModal(savedReport);
+            document.body.appendChild(modal);
+        }
+
+        function showFinalReport(report) {
+            console.log('showFinalReport called with:', report);
+            if (!report) {
+                console.error('showFinalReport: report is null or undefined');
+                return;
+            }
+            
+            savedReport = report;
+            
+            try {
+                const modal = createReportModal(report);
+                document.body.appendChild(modal);
+                
+                const messagesDiv = document.getElementById('messages');
+                const reportDiv = document.createElement('div');
+                reportDiv.className = 'final-report completed';
+                reportDiv.innerHTML = `
+                    <h2>Финальный отчет готов</h2>
+                    <p>Нажмите, чтобы открыть детали.</p>
+                `;
+                
+                reportDiv.onclick = openReportModal;
+                
+                messagesDiv.appendChild(reportDiv);
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            } catch (error) {
+                console.error('Error showing final report:', error);
+                alert('Ошибка при отображении отчета: ' + error.message);
+            }
+        }
+
+        document.getElementById('messageInput').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        document.getElementById('messageInput').addEventListener('input', (e) => {
+            e.target.style.height = 'auto';
+            e.target.style.height = e.target.scrollHeight + 'px';
+        });
+
+        initTheme();
+        connect();
+    </script>
+
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <p class="loading-message">Генерируется финальный отчет</p>
+            <p class="loading-subtitle">Это может занять пару минут. Пожалуйста, подождите...</p>
+        </div>
+    </div>
+</body>
+</html>
