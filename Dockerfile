@@ -20,8 +20,14 @@ RUN pip install --no-cache-dir --upgrade pip && \
 
 COPY --chown=nodehr:nodehr . .
 
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+RUN echo '#!/bin/bash' > /entrypoint.sh && \
+    echo 'set -e' >> /entrypoint.sh && \
+    echo 'if [ -d /app/logs ]; then' >> /entrypoint.sh && \
+    echo '    chown -R nodehr:nodehr /app/logs 2>/dev/null || true' >> /entrypoint.sh && \
+    echo '    chmod -R 755 /app/logs 2>/dev/null || true' >> /entrypoint.sh && \
+    echo 'fi' >> /entrypoint.sh && \
+    echo 'exec gosu nodehr "$@"' >> /entrypoint.sh && \
+    chmod +x /entrypoint.sh
 
 EXPOSE 8000
 
