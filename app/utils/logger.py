@@ -263,14 +263,13 @@ class NodeHRLogger:
                 user_message = msg.get("content", "")
                 break
 
-        agent_visible_message = ""
-        for msg in reversed(conversation_history):
-            if msg.get("role") == "assistant":
-                agent_visible_message = msg.get("content", "")
-                break
-
+        agent_visible_message = state.get("interviewer_response", "")
+        
         if not agent_visible_message:
-            agent_visible_message = state.get("interviewer_response", "")
+            for msg in reversed(conversation_history):
+                if msg.get("role") == "assistant":
+                    agent_visible_message = msg.get("content", "")
+                    break
 
         internal_thoughts_list = state.get("internal_thoughts", [])
         internal_thoughts_str = ""
