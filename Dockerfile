@@ -6,7 +6,10 @@ ENV PIP_NO_CACHE_DIR=1 \
 
 WORKDIR /app
 
-RUN useradd -ms /bin/bash nodehr && \
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends gosu && \
+    rm -rf /var/lib/apt/lists/* && \
+    useradd -ms /bin/bash nodehr && \
     mkdir -p /app/logs && \
     chown -R nodehr:nodehr /app
 
@@ -17,8 +20,10 @@ RUN pip install --no-cache-dir --upgrade pip && \
 
 COPY --chown=nodehr:nodehr . .
 
-USER nodehr
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 EXPOSE 8000
 
+ENTRYPOINT ["/entrypoint.sh"]
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
