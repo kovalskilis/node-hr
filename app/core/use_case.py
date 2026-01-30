@@ -1,3 +1,4 @@
+import json
 from typing import Dict
 
 from app.core.engine import NodeHREngine
@@ -38,7 +39,17 @@ class InterviewUseCase:
         if not hasattr(self.engine.logger, '_turn_counter'):
             self.engine.logger._turn_counter = len(self.engine.logger.log_data.get("turns", []))
         self.engine.logger._turn_counter += 1
+        
+        current_thoughts = result.get("internal_thoughts", []).copy()
         self.engine.logger.save_turn(result, turn_number=self.engine.logger._turn_counter)
+        
+        if result.get("is_complete") and result.get("final_report"):
+            final_report = result.get("final_report", {})
+            if isinstance(final_report, dict):
+                self.engine.logger.log_data["final_feedback"] = self.engine.logger._format_final_feedback_as_markdown(final_report)
+            else:
+                self.engine.logger.log_data["final_feedback"] = str(final_report)
+            self.engine.logger._save_log()
 
         return result
 

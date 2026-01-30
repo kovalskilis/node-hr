@@ -76,7 +76,7 @@ async def download_interview_log(session_id: str = Query(..., description="Sessi
             final_report = state.get("final_report")
             if final_report:
                 if isinstance(final_report, dict):
-                    final_feedback = json.dumps(final_report, ensure_ascii=False, indent=2)
+                    final_feedback = use_case.engine.logger._format_final_feedback_as_markdown(final_report)
                 else:
                     final_feedback = str(final_report)
             else:

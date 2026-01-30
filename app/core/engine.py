@@ -497,6 +497,13 @@ class NodeHREngine:
 
         state["final_report"] = report
         state["is_complete"] = True
+        
+        if isinstance(report, dict):
+            self.logger.log_data["final_feedback"] = self.logger._format_final_feedback_as_markdown(report)
+        else:
+            self.logger.log_data["final_feedback"] = str(report)
+        self.logger._save_log()
+        
         self.logger.log("System", f"Финальный отчет создан. Grade: {report.get('decision', {}).get('grade', 'N/A')}")
         return state
 

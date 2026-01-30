@@ -123,6 +123,98 @@ class NodeHRLogger:
         except Exception as e:
             print(f"Error saving log: {e}")
 
+    def _format_final_feedback_as_markdown(self, report: Dict[str, Any]) -> str:
+        if not isinstance(report, dict):
+            return str(report)
+        
+        lines = []
+        
+        decision = report.get("decision", {})
+        if decision:
+            lines.append("# Решение (Decision)")
+            lines.append("")
+            lines.append(f"**Уровень (Grade):** {decision.get('grade', 'N/A')}")
+            lines.append(f"**Рекомендация по найму:** {decision.get('hiring_recommendation', 'N/A')}")
+            lines.append(f"**Уровень уверенности:** {decision.get('confidence_score', 'N/A')}/100")
+            lines.append("")
+            reason = decision.get('recommendation_reason', '')
+            if reason:
+                lines.append(f"**Обоснование:** {reason}")
+                lines.append("")
+        
+        skills_matrix = report.get("skills_matrix", {})
+        if skills_matrix:
+            lines.append("## Матрица навыков (Skills Matrix)")
+            lines.append("")
+            lines.append(f"- **Технические навыки:** {skills_matrix.get('technical_skills', 'N/A')}/10")
+            lines.append(f"- **Коммуникация:** {skills_matrix.get('communication', 'N/A')}/10")
+            lines.append(f"- **Решение проблем:** {skills_matrix.get('problem_solving', 'N/A')}/10")
+            lines.append(f"- **Опыт:** {skills_matrix.get('experience', 'N/A')}/10")
+            lines.append(f"- **Культурное соответствие:** {skills_matrix.get('cultural_fit', 'N/A')}/10")
+            lines.append("")
+            
+            confirmed_skills = skills_matrix.get('confirmed_skills', [])
+            if confirmed_skills:
+                lines.append("### Подтвержденные навыки (Confirmed Skills)")
+                lines.append("")
+                for skill in confirmed_skills:
+                    lines.append(f"- {skill}")
+                lines.append("")
+        
+        knowledge_gaps = report.get("knowledge_gaps", [])
+        if knowledge_gaps:
+            lines.append("## Пробелы в знаниях (Knowledge Gaps)")
+            lines.append("")
+            for i, gap in enumerate(knowledge_gaps, 1):
+                gap_text = gap.get('gap', 'N/A')
+                educational_content = gap.get('educational_content', '')
+                
+                lines.append(f"### {i}. {gap_text}")
+                lines.append("")
+                if educational_content:
+                    lines.append("**Образовательный контент:**")
+                    lines.append("")
+                    lines.append(educational_content)
+                    lines.append("")
+        
+        roadmap = report.get("roadmap", {})
+        if roadmap:
+            lines.append("## Дорожная карта развития (Roadmap)")
+            lines.append("")
+            
+            immediate = roadmap.get('immediate', [])
+            if immediate:
+                lines.append("### Немедленные действия (Immediate)")
+                lines.append("")
+                for item in immediate:
+                    lines.append(f"- {item}")
+                lines.append("")
+            
+            short_term = roadmap.get('short_term', [])
+            if short_term:
+                lines.append("### Краткосрочные цели (Short-term)")
+                lines.append("")
+                for item in short_term:
+                    lines.append(f"- {item}")
+                lines.append("")
+            
+            long_term = roadmap.get('long_term', [])
+            if long_term:
+                lines.append("### Долгосрочные цели (Long-term)")
+                lines.append("")
+                for item in long_term:
+                    lines.append(f"- {item}")
+                lines.append("")
+        
+        summary = report.get("summary", "")
+        if summary:
+            lines.append("## Резюме (Summary)")
+            lines.append("")
+            lines.append(summary)
+            lines.append("")
+        
+        return "\n".join(lines)
+
     def reset(self):
         self.log_file = self.log_dir / f"interview_log_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.json"
         self.log_data = {
@@ -190,6 +282,8 @@ class NodeHRLogger:
                 if thought_text:
                     thought_parts.append(f"[{agent}]: {thought_text}")
             internal_thoughts_str = "\n".join(thought_parts)
+            if internal_thoughts_str and not internal_thoughts_str.endswith("\n"):
+                internal_thoughts_str += "\n"
 
         turn_data = {
             "turn_id": turn_id,
@@ -203,8 +297,10 @@ class NodeHRLogger:
         if state.get("is_complete") and state.get("final_report"):
             final_report = state.get("final_report", {})
             if isinstance(final_report, dict):
-                self.log_data["final_feedback"] = json.dumps(final_report, ensure_ascii=False, indent=2)
+                self.log_data["final_feedback"] = self._format_final_feedback_as_markdown(final_report)
             else:
                 self.log_data["final_feedback"] = str(final_report)
 
         self._save_log()
+        
+        state["internal_thoughts"] = []
