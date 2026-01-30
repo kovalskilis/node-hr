@@ -1,3 +1,4 @@
+import copy
 import json
 from typing import Dict
 
@@ -23,7 +24,7 @@ class InterviewUseCase:
         self.engine.logger._turn_counter = 1
         self.engine.logger.save_turn(result, turn_number=1)
         
-        result_copy = result.copy()
+        result_copy = copy.deepcopy(result)
         result["internal_thoughts"] = []
         self.storage.save(session_id, result)
         
@@ -55,7 +56,7 @@ class InterviewUseCase:
                 self.engine.logger.log_data["final_feedback"] = str(final_report)
             self.engine.logger._save_log()
 
-        result_copy = result.copy()
+        result_copy = copy.deepcopy(result)
         result["internal_thoughts"] = []
         self.storage.save(session_id, result)
 
